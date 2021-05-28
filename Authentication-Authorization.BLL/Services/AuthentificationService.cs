@@ -51,7 +51,7 @@ namespace Authentication_Authorization.BLL.Services
             if(fetchedRefreshToken.Username != refreshTokenFromCookie.Username)
                 throw new BussinesException("Refresh tokens doesn't match", 400);
 
-            UserForTokenDTO principalForNewToken =  _userService.FindUserByUsername(refreshTokenFromCookie.Username).Result;
+            UserForTokenDTO principalForNewToken =  _userService.FindUserByUsername(refreshTokenFromCookie.Username);
             string newJwtToken = GenerateJwt(principalForNewToken);
             this.AddRefreshTokenToCookieAndUpdateDatabase(principalForNewToken.Username, response);
             return newJwtToken;

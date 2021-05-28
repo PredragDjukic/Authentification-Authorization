@@ -6,11 +6,11 @@ namespace Authentication_Authorization.BLL.Contracts.Interfaces
 {
     public interface IUserService
     {
-        Task<ICollection<UserResponseDTO>> BrowseUsers();
-        Task<UserResponseDTO> FindUserById(int id);
-        Task<UserForTokenDTO> FindUserByUsername(string username);
-        Task<UserConfirmationDTO> CreateUser(UserRequestBodyDTO newUserBody);
-        Task<UserConfirmationDTO> UpdateUser(int id, UserRequestBodyDTO updatedUserBody);
-        Task RemoveUser(int id);
+        ICollection<UserResponseDTO> BrowseUsers();
+        UserResponseDTO FindUserById(int id);
+        UserForTokenDTO FindUserByUsername(string username);
+        UserConfirmationDTO CreateUser(UserRequestBodyDTO newUserBody);
+        UserConfirmationDTO UpdateUser(int id, UserRequestBodyDTO updatedUserBody);
+        void RemoveUser(int id);
     }
 }

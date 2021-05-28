@@ -23,33 +23,33 @@ namespace Authentication_Authorization.Presentation.Controllers
 
         [HttpGet]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<ICollection<UserConfirmationDTO>>> GetUsers()
+        public ActionResult<ICollection<UserConfirmationDTO>> GetUsers()
         {
-            ICollection<UserResponseDTO> users = await _userService.BrowseUsers();
+            ICollection<UserResponseDTO> users =  _userService.BrowseUsers();
 
             return Ok(users);
         }
 
         [Authorize(Roles = "Admin, Server")]
         [HttpGet("{id}")]
-        public async Task<ActionResult<UserConfirmationDTO>> GetUserById(int id)
+        public ActionResult<UserConfirmationDTO> GetUserById(int id)
         {
             TokenValidationHelper.CheckTokenForServerId(id, HttpContext);
-            UserResponseDTO userById = await _userService.FindUserById(id);
+            UserResponseDTO userById = _userService.FindUserById(id);
 
             return Ok(userById);
         }
 
         [HttpPost]
-        public async Task<ActionResult<UserConfirmationDTO>> PostUser([FromBody] UserRequestBodyDTO newUserBody)
+        public ActionResult<UserConfirmationDTO> PostUser([FromBody] UserRequestBodyDTO newUserBody)
         {
-            UserConfirmationDTO createdUserResponse = await _userService.CreateUser(newUserBody);
+            UserConfirmationDTO createdUserResponse = _userService.CreateUser(newUserBody);
 
             return Created(Request.Path, createdUserResponse);
         }
 
         [HttpPost("login")]
-        public async Task<ActionResult> AutorizeUser([FromBody] PrincipalModel principal)
+        public  ActionResult AutorizeUser([FromBody] PrincipalModel principal)
         {
             var token = _authentificationService.ValidatePrincipalAndGenerateTokens(principal, Response);
 
@@ -58,7 +58,7 @@ namespace Authentication_Authorization.Presentation.Controllers
         }
 
         [HttpPost("refresh")]
-        public async Task<ActionResult> RefreshToken([FromBody] JwtModel token)
+        public  ActionResult RefreshToken([FromBody] JwtModel token)
         {
             string jwt = _authentificationService.Refresh(token, Request, Response);
 
@@ -68,19 +68,19 @@ namespace Authentication_Authorization.Presentation.Controllers
 
         [Authorize(Roles = "Admin, Server")]
         [HttpPut("{id}")]
-        public async Task<ActionResult<UserConfirmationDTO>> PutUser(int id, [FromBody] UserRequestBodyDTO updatedUserBody)
+        public  ActionResult<UserConfirmationDTO> PutUser(int id, [FromBody] UserRequestBodyDTO updatedUserBody)
         {
             TokenValidationHelper.CheckTokenForServerId(id, HttpContext);
-            UserConfirmationDTO updatedUserResponse = await _userService.UpdateUser(id, updatedUserBody);
+            UserConfirmationDTO updatedUserResponse =  _userService.UpdateUser(id, updatedUserBody);
 
             return Ok(updatedUserResponse);
         }
 
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUser(int id)
+        public  IActionResult DeleteUser(int id)
         {
-            await _userService.RemoveUser(id);
+            _userService.RemoveUser(id);
 
             return NoContent();
         }

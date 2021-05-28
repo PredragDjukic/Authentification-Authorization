@@ -27,34 +27,34 @@ namespace Authentication_Authorization.BLL.Services
             _connectionStringOptions = connectionStringOptions;
         }
 
-        public Task<ICollection<UserResponseDTO>> BrowseUsers()
+        public ICollection<UserResponseDTO> BrowseUsers()
         {
             ICollection<User> allUsers = _database.GetAllUsers(_connectionStringOptions.Value.ConnectionString);
 
-            return Task.FromResult(_mapper.Map<ICollection<UserResponseDTO>>(allUsers));
+            return (_mapper.Map<ICollection<UserResponseDTO>>(allUsers));
         }
 
-        public Task<UserResponseDTO> FindUserById(int id)
+        public UserResponseDTO FindUserById(int id)
         {
             User userById = _database.GetUserById(id, _connectionStringOptions.Value.ConnectionString);
             
             if (userById.Id == 0)
                 throw new BussinesException("User doesn't exist", 400);
 
-            return Task.FromResult(_mapper.Map<UserResponseDTO>(userById));
+            return (_mapper.Map<UserResponseDTO>(userById));
         }
 
-        public Task<UserForTokenDTO> FindUserByUsername(string username)
+        public UserForTokenDTO FindUserByUsername(string username)
         {
             User userByUsername = _database.GetUserByUsername(
                 username,
                 _connectionStringOptions.Value.ConnectionString
             );
 
-            return Task.FromResult(_mapper.Map<UserForTokenDTO>(userByUsername));
+            return (_mapper.Map<UserForTokenDTO>(userByUsername));
         }
 
-        public Task<UserConfirmationDTO> CreateUser(UserRequestBodyDTO newUserBody)
+        public UserConfirmationDTO CreateUser(UserRequestBodyDTO newUserBody)
         {
             bool isRoleValid = Enum.IsDefined(typeof(Roles), newUserBody.Role);
 
@@ -63,7 +63,7 @@ namespace Authentication_Authorization.BLL.Services
 
             User newUser = this.CreateUserAndAddToDatabase(newUserBody);
 
-            return Task.FromResult(_mapper.Map<UserConfirmationDTO>(newUser));
+            return (_mapper.Map<UserConfirmationDTO>(newUser));
 
         }
 
@@ -85,7 +85,7 @@ namespace Authentication_Authorization.BLL.Services
 
         }
 
-        public Task<UserConfirmationDTO> UpdateUser(int id, UserRequestBodyDTO updatedUser)
+        public UserConfirmationDTO UpdateUser(int id, UserRequestBodyDTO updatedUser)
         {
             User userToUpdate = _database.GetUserById(id, _connectionStringOptions.Value.ConnectionString);
             bool isRoleValid = Enum.IsDefined(typeof(Roles), updatedUser.Role);
@@ -97,7 +97,7 @@ namespace Authentication_Authorization.BLL.Services
                 throw new BussinesException("Given Role doesn't exist", 400);
 
             this.UpdateUserAndAddToDatabase(userToUpdate, updatedUser);                
-            return Task.FromResult(_mapper.Map<UserConfirmationDTO>(userToUpdate));
+            return (_mapper.Map<UserConfirmationDTO>(userToUpdate));
         }
 
         private void UpdateUserAndAddToDatabase(User userToUpdate, UserRequestBodyDTO updatedUser)
@@ -111,7 +111,7 @@ namespace Authentication_Authorization.BLL.Services
             _database.UpdateUser(userToUpdate, _connectionStringOptions.Value.ConnectionString);
         }
 
-        public Task RemoveUser(int id)
+        public void RemoveUser(int id)
         {
             User userToDelete = _database.GetUserById(id, _connectionStringOptions.Value.ConnectionString);
 
@@ -119,7 +119,6 @@ namespace Authentication_Authorization.BLL.Services
                 throw new BussinesException("User with that Id doesn't exist", 400);
 
             _database.DeleteUser(id, _connectionStringOptions.Value.ConnectionString);
-            return Task.CompletedTask;
         }
     }
 }
