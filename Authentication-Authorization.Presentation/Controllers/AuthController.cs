@@ -6,11 +6,11 @@ namespace Authentication_Authorization.Presentation.Controllers
 {
     [ApiController]
     [Route("api")]
-    public class AuthorizeController : ControllerBase
+    public class AuthController : ControllerBase
     {
         private readonly IAuthentificationService _service;
 
-        public AuthorizeController(IAuthentificationService service)
+        public AuthController(IAuthentificationService service)
         {
             _service = service;
         }

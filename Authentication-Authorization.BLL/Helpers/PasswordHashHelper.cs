@@ -45,8 +45,8 @@ namespace Authentication_Authorization.BLL.Helpers
                     return false;
                 }
             }
-            return true;
 
+            return true;
         }
 
     }

@@ -1,6 +1,7 @@
 ﻿using Authentication_Authorization.BLL.Contracts.Interfaces;
 using Authentication_Authorization.BLL.Helpers;
 using Authentication_Authorization.BLL.Models;
+using Authentication_Authorization.Presentation.Models.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
@@ -19,7 +20,7 @@ namespace Authentication_Authorization.Presentation.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = RoleConstatnts.Admin)]
         public ActionResult<ICollection<UserConfirmationDTO>> GetUsers()
         {
             ICollection<UserResponseDTO> users =  _service.BrowseUsers();
@@ -27,7 +28,7 @@ namespace Authentication_Authorization.Presentation.Controllers
             return Ok(users);
         }
 
-        [Authorize(Roles = "Admin, Server")]
+        [Authorize(Roles = RoleConstatnts.All)]
         [HttpGet("{id}")]
         public ActionResult<UserConfirmationDTO> GetUserById(int id)
         {
@@ -45,7 +46,7 @@ namespace Authentication_Authorization.Presentation.Controllers
             return Created(Request.Path, createdUserResponse);
         }
 
-        [Authorize(Roles = "Admin, Server")]
+        [Authorize(Roles = RoleConstatnts.All)]
         [HttpPut("{id}")]
         public  ActionResult<UserConfirmationDTO> PutUser(int id, [FromBody] UserRequestBodyDTO updatedUserBody)
         {
@@ -55,7 +56,7 @@ namespace Authentication_Authorization.Presentation.Controllers
             return Ok(updatedUserResponse);
         }
 
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = RoleConstatnts.Admin)]
         [HttpDelete("{id}")]
         public  IActionResult DeleteUser(int id)
         {

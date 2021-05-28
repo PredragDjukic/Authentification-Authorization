@@ -62,6 +62,7 @@ namespace Authentication_Authorization.Presentation
                 };
             });
 
+
             services.Configure<DatabaseConnectionStringModel>(Configuration.GetSection("Database"));
             services.Configure<JwtConfigurationsModel>(Configuration.GetSection("Jwt"));
             services.AddOptions();
