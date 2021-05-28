@@ -1,6 +1,8 @@
 using Authentication_Authorization.BLL.Contracts.Interfaces;
 using Authentication_Authorization.BLL.Models;
 using Authentication_Authorization.BLL.Services;
+using Authentication_Authorization.DAL.DatabaseAccess;
+using Authentication_Authorization.DAL.Interfaces;
 using Authentication_Authorization.Presentation.Attributes;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -66,6 +68,7 @@ namespace Authentication_Authorization.Presentation
 
             services.AddSingleton<IUserService, UserService>();
             services.AddSingleton<IAuthentificationService, AuthentificationService>();
+            services.AddSingleton<IUserRepository>(x => new UserRepository(Configuration.GetConnectionString("DatabaseString")));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

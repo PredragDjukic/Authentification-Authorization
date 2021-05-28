@@ -1,4 +1,5 @@
 ﻿using Authentication_Authorization.DAL.Entities;
+using Authentication_Authorization.DAL.Interfaces;
 using Authentication_Authorization.DAL.Models.Constants;
 using Microsoft.Data.SqlClient;
 using System;
@@ -7,10 +8,15 @@ using System.Data;
 
 namespace Authentication_Authorization.DAL.DatabaseAccess
 {
-    public class UserRepository
+    public class UserRepository : IUserRepository
     {
+        private readonly string connectionString;
+        public UserRepository(string connectionString)
+        {
+            this.connectionString = connectionString;
+        }
 
-        public ICollection<User> GetAllUsers(string connectionString)
+        public ICollection<User> GetAllUsers()
         {
             List<User> allUsers = new();
 
@@ -18,13 +24,13 @@ namespace Authentication_Authorization.DAL.DatabaseAccess
             {
                 connection.Open();
 
-                using (SqlCommand cmd = new SqlCommand())
+                using (SqlCommand command = new SqlCommand())
                 {
-                    cmd.CommandText = UserStoredProcedures.GetAll;
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Connection = connection;
+                    command.CommandText = UserStoredProcedures.GetAll;
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Connection = connection;
 
-                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    using (SqlDataReader reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
@@ -44,7 +50,7 @@ namespace Authentication_Authorization.DAL.DatabaseAccess
             return allUsers;
         }
 
-        public User GetUserById(int id, string connectionString)
+        public User GetUserById(int id)
         {
             User fetchedUserById = new();
 
@@ -77,7 +83,7 @@ namespace Authentication_Authorization.DAL.DatabaseAccess
             return fetchedUserById;
         }
 
-        public void AddUser(User newUser, string connectionString)
+        public void AddUser(User newUser)
         {
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
@@ -102,7 +108,7 @@ namespace Authentication_Authorization.DAL.DatabaseAccess
             }
         }
 
-        public void UpdateUser(User updatedUser, string connectionString)
+        public void UpdateUser(User updatedUser)
         {
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
@@ -127,7 +133,7 @@ namespace Authentication_Authorization.DAL.DatabaseAccess
             }
         }
 
-        public void DeleteUser(int deletedUserId, string connectionString)
+        public void DeleteUser(int deletedUserId)
         {
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
@@ -147,7 +153,7 @@ namespace Authentication_Authorization.DAL.DatabaseAccess
             }
         }
 
-        public User GetUserByUsername(string username, string connectionString)
+        public User GetUserByUsername(string username)
         {
             User fetchedUserByUsername = new();
 

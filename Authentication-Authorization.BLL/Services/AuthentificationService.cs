@@ -2,8 +2,8 @@
 using Authentication_Authorization.BLL.Exceptions;
 using Authentication_Authorization.BLL.Helpers;
 using Authentication_Authorization.BLL.Models;
-using Authentication_Authorization.DAL.DatabaseAccess;
 using Authentication_Authorization.DAL.Entities;
+using Authentication_Authorization.DAL.Interfaces;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
@@ -12,7 +12,6 @@ using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.Text;
 
 namespace Authentication_Authorization.BLL.Services
@@ -20,20 +19,17 @@ namespace Authentication_Authorization.BLL.Services
     public class AuthentificationService : IAuthentificationService
     {
         private readonly IOptions<JwtConfigurationsModel> _jwtConfig;
-        private readonly IOptions<DatabaseConnectionStringModel> _connectionString;
         private readonly IMapper _mapper;
-        private readonly UserRepository _userRepository;
+        private readonly IUserRepository _userRepository;
 
         public AuthentificationService(
             IOptions<JwtConfigurationsModel> jwtConfig,
             IMapper mapper,
-            IOptions<DatabaseConnectionStringModel> connectionString
-        )
+            IUserRepository userRepository)
         {
             _jwtConfig = jwtConfig;
             _mapper = mapper;
-            _userRepository = new UserRepository();
-            _connectionString = connectionString;
+            _userRepository = userRepository;
         }
 
         public string Refresh(JwtModel jwtModel)
@@ -48,17 +44,14 @@ namespace Authentication_Authorization.BLL.Services
             if (issuedAt == null || username == null)
                 throw new BussinesException("Invalid token", 400);
 
-            CheckIfRefreshTokenIsValid(issuedAt.Value);
+            this.CheckIfRefreshTokenIsValid(issuedAt.Value);
 
-            return GenerateJwtWithUsername(username.Value);
+            return this.GenerateJwtWithUsername(username.Value);
         }
 
         private string GenerateJwtWithUsername(string username)
         {
-            User userForToken = _userRepository.GetUserByUsername(
-                username,
-                _connectionString.Value.ConnectionString
-            );
+            User userForToken = _userRepository.GetUserByUsername(username);
             string newJwt = GenerateJwt(_mapper.Map<UserForTokenDTO>(userForToken));
 
             return newJwt;
@@ -67,7 +60,7 @@ namespace Authentication_Authorization.BLL.Services
         private void CheckIfRefreshTokenIsValid(string issuedAt)
         {
             DateTime issuedAtDate = DateTime.Parse(issuedAt);
-            CheckIfIssuedAtPassed(issuedAtDate);
+            this.CheckIfIssuedAtPassed(issuedAtDate);
         }
 
         private void CheckIfIssuedAtPassed(DateTime issuedAt)
@@ -88,10 +81,7 @@ namespace Authentication_Authorization.BLL.Services
 
         private UserForTokenDTO Validate(PrincipalModel principal)
         {
-            User userToValidate = _userRepository.GetUserByUsername(
-                principal.Username,
-                _connectionString.Value.ConnectionString
-            );
+            User userToValidate = _userRepository.GetUserByUsername(principal.Username);
 
             if (userToValidate.Username == null)
                 throw new BussinesException("Username doesn't exist", 400);

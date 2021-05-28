@@ -3,10 +3,9 @@ using Authentication_Authorization.BLL.Contracts.Interfaces;
 using Authentication_Authorization.BLL.Exceptions;
 using Authentication_Authorization.BLL.Helpers;
 using Authentication_Authorization.BLL.Models;
-using Authentication_Authorization.DAL.DatabaseAccess;
 using Authentication_Authorization.DAL.Entities;
+using Authentication_Authorization.DAL.Interfaces;
 using AutoMapper;
-using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 
@@ -14,28 +13,26 @@ namespace Authentication_Authorization.BLL.Services
 {
     public class UserService : IUserService
     {
-        private readonly UserRepository _database;
+        private readonly IUserRepository _repository;
         private readonly IMapper _mapper;
-        private readonly IOptions<DatabaseConnectionStringModel> _connectionStringOptions;
 
 
-        public UserService(IMapper mapper, IOptions<DatabaseConnectionStringModel> connectionStringOptions)
+        public UserService(IMapper mapper, IUserRepository repository)
         {
-            _database = new UserRepository();
             _mapper = mapper;
-            _connectionStringOptions = connectionStringOptions;
+            _repository = repository;
         }
 
         public ICollection<UserResponseDTO> BrowseUsers()
         {
-            ICollection<User> allUsers = _database.GetAllUsers(_connectionStringOptions.Value.ConnectionString);
+            ICollection<User> allUsers = _repository.GetAllUsers();
 
             return (_mapper.Map<ICollection<UserResponseDTO>>(allUsers));
         }
 
         public UserResponseDTO FindUserById(int id)
         {
-            User userById = _database.GetUserById(id, _connectionStringOptions.Value.ConnectionString);
+            User userById = _repository.GetUserById(id);
             
             if (userById.Id == 0)
                 throw new BussinesException("User doesn't exist", 400);
@@ -45,10 +42,7 @@ namespace Authentication_Authorization.BLL.Services
 
         public UserForTokenDTO FindUserByUsername(string username)
         {
-            User userByUsername = _database.GetUserByUsername(
-                username,
-                _connectionStringOptions.Value.ConnectionString
-            );
+            User userByUsername = _repository.GetUserByUsername(username);
 
             return (_mapper.Map<UserForTokenDTO>(userByUsername));
         }
@@ -63,7 +57,6 @@ namespace Authentication_Authorization.BLL.Services
             User newUser = this.CreateUserAndAddToDatabase(newUserBody);
 
             return (_mapper.Map<UserConfirmationDTO>(newUser));
-
         }
 
         private User CreateUserAndAddToDatabase(UserRequestBodyDTO newUserBody)
@@ -78,15 +71,14 @@ namespace Authentication_Authorization.BLL.Services
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
-            _database.AddUser(newUser, _connectionStringOptions.Value.ConnectionString);
+            _repository.AddUser(newUser);
 
             return newUser;
-
         }
 
         public UserConfirmationDTO UpdateUser(int id, UserRequestBodyDTO updatedUser)
         {
-            User userToUpdate = _database.GetUserById(id, _connectionStringOptions.Value.ConnectionString);
+            User userToUpdate = _repository.GetUserById(id);
             bool isRoleValid = Enum.IsDefined(typeof(Roles), updatedUser.Role);
 
             if(userToUpdate.Id == 0)
@@ -95,7 +87,8 @@ namespace Authentication_Authorization.BLL.Services
             else if(!isRoleValid)
                 throw new BussinesException("Given Role doesn't exist", 400);
 
-            this.UpdateUserAndAddToDatabase(userToUpdate, updatedUser);                
+            this.UpdateUserAndAddToDatabase(userToUpdate, updatedUser);     
+            
             return (_mapper.Map<UserConfirmationDTO>(userToUpdate));
         }
 
@@ -107,17 +100,17 @@ namespace Authentication_Authorization.BLL.Services
             userToUpdate.Password = PasswordHashHelper.Hash(updatedUser.Password);
             userToUpdate.Role = updatedUser.Role;
             userToUpdate.UpdatedAt = DateTime.UtcNow;
-            _database.UpdateUser(userToUpdate, _connectionStringOptions.Value.ConnectionString);
+            _repository.UpdateUser(userToUpdate);
         }
 
         public void RemoveUser(int id)
         {
-            User userToDelete = _database.GetUserById(id, _connectionStringOptions.Value.ConnectionString);
+            User userToDelete = _repository.GetUserById(id);
 
             if (userToDelete.Id == 0)
                 throw new BussinesException("User with that Id doesn't exist", 400);
 
-            _database.DeleteUser(id, _connectionStringOptions.Value.ConnectionString);
+            _repository.DeleteUser(id);
         }
     }
 }
