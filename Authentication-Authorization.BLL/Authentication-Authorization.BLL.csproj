@@ -11,7 +11,7 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <ProjectReference Include="..\Authentication-Authorization.Infrastructure\Authentication-Authorization.DAL.csproj" />
+    <ProjectReference Include="..\Authentication-Authorization.DAL\Authentication-Authorization.DAL.csproj" />
   </ItemGroup>
 
 </Project>

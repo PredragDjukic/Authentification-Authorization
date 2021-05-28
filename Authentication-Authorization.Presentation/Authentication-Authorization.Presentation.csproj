@@ -12,8 +12,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Authentication-Authorization.core\Authentication-Authorization.BLL.csproj" />
-    <ProjectReference Include="..\Authentication-Authorization.Infrastructure\Authentication-Authorization.DAL.csproj" />
+    <ProjectReference Include="..\Authentication-Authorization.BLL\Authentication-Authorization.BLL.csproj" />
+    <ProjectReference Include="..\Authentication-Authorization.DAL\Authentication-Authorization.DAL.csproj" />
   </ItemGroup>
 
 </Project>
