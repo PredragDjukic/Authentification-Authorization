@@ -65,7 +65,6 @@ namespace Authentication_Authorization.Presentation
             services.AddOptions();
 
             services.AddSingleton<IUserService, UserService>();
-            services.AddSingleton<IRefreshTokenService, RefreshTokenService>();
             services.AddSingleton<IAuthentificationService, AuthentificationService>();
         }
 

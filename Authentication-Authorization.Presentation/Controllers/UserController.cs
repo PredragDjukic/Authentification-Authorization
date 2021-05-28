@@ -4,7 +4,6 @@ using Authentication_Authorization.BLL.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Authentication_Authorization.Presentation.Controllers
 {
@@ -51,7 +50,7 @@ namespace Authentication_Authorization.Presentation.Controllers
         [HttpPost("login")]
         public  ActionResult AutorizeUser([FromBody] PrincipalModel principal)
         {
-            var token = _authentificationService.ValidatePrincipalAndGenerateTokens(principal, Response);
+            var token = _authentificationService.ValidatePrincipalAndGenerateToken(principal, Response);
 
             return Ok(new { token });
 
@@ -60,9 +59,8 @@ namespace Authentication_Authorization.Presentation.Controllers
         [HttpPost("refresh")]
         public  ActionResult RefreshToken([FromBody] JwtModel token)
         {
-            string jwt = _authentificationService.Refresh(token, Request, Response);
-
-            return Ok(new { token = jwt });
+            string newJwt = _authentificationService.Refresh(token);
+            return Ok(new { token = newJwt });
 
         }
 

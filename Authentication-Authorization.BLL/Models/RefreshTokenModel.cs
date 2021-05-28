@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace Authentication_Authorization.DAL.Entities
+namespace Authentication_Authorization.BLL.Models
 {
-    public class RefreshToken
+    public class RefreshTokenModel
     {
         public string Token { get; set; }
         public DateTime Expiration { get; set; }

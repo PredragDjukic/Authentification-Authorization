@@ -1,6 +1,5 @@
 ﻿using Authentication_Authorization.BLL.Models;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Authentication_Authorization.BLL.Contracts.Interfaces
 {

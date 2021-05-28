@@ -9,10 +9,11 @@ namespace Authentication_Authorization.Presentation.Controllers
     [ApiExplorerSettings(IgnoreApi = true)] //Nakon dodavanja UseExceptionHandler potrebno da bi swagger radio, inace baca grešku
     public class ErrorController : ControllerBase
     {
+
         [Route("/error-development")]
         public IActionResult ErrorLocalDevelopment([FromServices] IWebHostEnvironment webHostEnvironment)
         {
-            var context = HttpContext.Features.Get<IExceptionHandlerPathFeature>();
+            var context = HttpContext.Features.Get<IExceptionHandlerFeature>();
             var exception = context.Error as BussinesException;
 
             string stackTrace = context.Error.StackTrace;

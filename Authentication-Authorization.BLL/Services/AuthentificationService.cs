@@ -10,6 +10,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -22,58 +23,65 @@ namespace Authentication_Authorization.BLL.Services
         private readonly IOptions<DatabaseConnectionStringModel> _connectionString;
         private readonly IMapper _mapper;
         private readonly UserRepository _userRepository;
-        private readonly RefreshTokenRepository _refreshTokenRepository;
-        private readonly IRefreshTokenService _refreshTokenService;
-        private readonly IUserService _userService;
 
         public AuthentificationService(
             IOptions<JwtConfigurationsModel> jwtConfig,
             IMapper mapper,
-            IOptions<DatabaseConnectionStringModel> connectionString,
-            IRefreshTokenService refreshTokenService,
-            IUserService userService
+            IOptions<DatabaseConnectionStringModel> connectionString
         )
         {
             _jwtConfig = jwtConfig;
             _mapper = mapper;
             _userRepository = new UserRepository();
             _connectionString = connectionString;
-            _refreshTokenRepository = new RefreshTokenRepository();
-            _refreshTokenService = refreshTokenService;
-            _userService = userService;
         }
 
-        public string Refresh(JwtModel jwtModel, HttpRequest request, HttpResponse response)
+        public string Refresh(JwtModel jwtModel)
         {
-            RefreshToken fetchedRefreshToken = _refreshTokenService.GetRefreshTokenFromUser(jwtModel);
-            RefreshToken refreshTokenFromCookie = this.GetRefreshTokenFromCookie(request);
+            var handler = new JwtSecurityTokenHandler();
+            var jsonToken = handler.ReadToken(jwtModel.Token);
+            var encryptedToken = jsonToken as JwtSecurityToken;
 
-            if(fetchedRefreshToken.Username != refreshTokenFromCookie.Username)
-                throw new BussinesException("Refresh tokens doesn't match", 400);
+            Claim issuedAt = encryptedToken.Claims.FirstOrDefault(e => e.Type == "issuedAt");
+            Claim username = encryptedToken.Claims.FirstOrDefault(e => e.Type == "username");
 
-            UserForTokenDTO principalForNewToken =  _userService.FindUserByUsername(refreshTokenFromCookie.Username);
-            string newJwtToken = GenerateJwt(principalForNewToken);
-            this.AddRefreshTokenToCookieAndUpdateDatabase(principalForNewToken.Username, response);
-            return newJwtToken;
+            if (issuedAt == null || username == null)
+                throw new BussinesException("Invalid token", 400);
 
-            
+            CheckIfRefreshTokenIsValid(issuedAt.Value);
+
+            return GenerateJwtWithUsername(username.Value);
         }
 
-        private RefreshToken GetRefreshTokenFromCookie(HttpRequest request)
+        private string GenerateJwtWithUsername(string username)
         {
-            return new RefreshToken()
-            {
-                Username = request.Cookies["User"],
-                Expiration = Convert.ToDateTime(request.Cookies["Expiration"]),
-                Token = request.Cookies["RefreshToken"]
-            };
+            User userForToken = _userRepository.GetUserByUsername(
+                username,
+                _connectionString.Value.ConnectionString
+            );
+            string newJwt = GenerateJwt(_mapper.Map<UserForTokenDTO>(userForToken));
+
+            return newJwt;
         }
 
-        public string ValidatePrincipalAndGenerateTokens(PrincipalModel principal, HttpResponse response)
+        private void CheckIfRefreshTokenIsValid(string issuedAt)
+        {
+            DateTime issuedAtDate = DateTime.Parse(issuedAt);
+            CheckIfIssuedAtPassed(issuedAtDate);
+        }
+
+        private void CheckIfIssuedAtPassed(DateTime issuedAt)
+        {
+            DateTime timeLimit = issuedAt.AddHours(24);
+
+            if (DateTime.UtcNow > timeLimit)
+                throw new BussinesException("RefreshToken has expired", 400);
+        }
+
+        public string ValidatePrincipalAndGenerateToken(PrincipalModel principal, HttpResponse response)
         {
             UserForTokenDTO principalForToken = this.Validate(principal);
             string jwtToken = GenerateJwt(principalForToken);
-            this.AddRefreshTokenToCookieAndDatabase(principal.Username, response);
 
             return jwtToken;
         }
@@ -120,109 +128,9 @@ namespace Authentication_Authorization.BLL.Services
             {
                 new Claim("role", principal.Role),
                 new Claim("username", principal.Username),
-                new Claim("id", principal.Id.ToString())
+                new Claim("id", principal.Id.ToString()),
+                new Claim("issuedAt", DateTime.UtcNow.ToString())
             };
         }
-
-        private void AddRefreshTokenToCookieAndDatabase(string username, HttpResponse response)
-        {
-            RefreshToken existingValidRefreshToken = _refreshTokenRepository.GetValidRefreshToken(
-                username,
-                _connectionString.Value.ConnectionString
-            );
-
-            if (existingValidRefreshToken.Username == null)
-            {
-                this.CheckIfInvalidRefreshTokenExist(username, response);
-            } 
-            else
-            {
-                this.AddExistingRefreshTokenToCookie(existingValidRefreshToken, response);
-            }
-            
-        }
-
-        private void CheckIfInvalidRefreshTokenExist(string username, HttpResponse response)
-        {
-            RefreshToken existingInvalidRefreshToken = _refreshTokenRepository.GetInvalidRefreshToken(
-                username,
-                _connectionString.Value.ConnectionString
-            );
-
-            if (existingInvalidRefreshToken.Username == null)
-            {
-                RefreshToken newRefreshToken = this.GenerateAndAddNewRefreshTokenToCookie(username, response);
-                _refreshTokenRepository.AddRefreshToken(newRefreshToken, _connectionString.Value.ConnectionString);
-            }
-            else
-            {
-                RefreshToken updatedRefreshToken = GenerateRefreshToken(existingInvalidRefreshToken.Username);
-                _refreshTokenRepository.UpdateRefreshToken(updatedRefreshToken, _connectionString.Value.ConnectionString);
-            }
-        }
-
-        private RefreshToken GenerateAndAddNewRefreshTokenToCookie(string username, HttpResponse response)
-        {
-            var newRefreshToken = GenerateRefreshToken(username);
-            this.AddExistingRefreshTokenToCookie(newRefreshToken, response);
-
-            return newRefreshToken;
-        }
-
-        private void AddRefreshTokenToCookieAndUpdateDatabase(string username, HttpResponse response)
-        {
-            RefreshToken updatedToken = GenerateRefreshToken(username);
-            _refreshTokenRepository.UpdateRefreshToken(updatedToken, _connectionString.Value.ConnectionString);
-            this.AddExistingRefreshTokenToCookie(updatedToken, response);
-        }
-
-        public RefreshToken GenerateRefreshToken(string username)
-        {
-            RefreshToken refreshToken = new()
-            {
-                Token = this.GenerateRefreshTokenRandomSequence(),
-                Expiration = DateTime.UtcNow.AddHours(24),
-                Username = username
-            };
-
-            return refreshToken;
-        }
-
-        private string GenerateRefreshTokenRandomSequence()
-        {
-            var randomNumber = new byte[32];
-
-            using (var rng = RandomNumberGenerator.Create())
-            {
-                rng.GetBytes(randomNumber);
-                return Convert.ToBase64String(randomNumber);
-            }
-        }
-
-        private void AddExistingRefreshTokenToCookie(RefreshToken refreshToken, HttpResponse response)
-        {
-            var cookieOptions = new CookieOptions
-            {
-                HttpOnly = true,
-                Expires = DateTime.UtcNow.AddHours(3),
-            };
-
-            response.Cookies.Append(
-                    "RefreshToken",
-                    refreshToken.Token,
-                    cookieOptions);
-
-            response.Cookies.Append(
-                    "Expiration",
-                    refreshToken.Expiration.ToString(),
-                    cookieOptions);
-
-            response.Cookies.Append(
-                    "User",
-                    refreshToken.Username,
-                    cookieOptions);
-        }
-
-
     }
 }

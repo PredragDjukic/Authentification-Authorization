@@ -3,8 +3,6 @@ using Authentication_Authorization.BLL.Models;
 using Microsoft.AspNetCore.Http;
 using System;
 using System.IdentityModel.Tokens.Jwt;
-using System.Net;
-using System.Security.Claims;
 
 namespace Authentication_Authorization.BLL.Helpers
 {
