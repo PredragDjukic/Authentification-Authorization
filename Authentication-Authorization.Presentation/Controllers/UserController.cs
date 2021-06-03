@@ -1,8 +1,7 @@
-﻿using Authentication_Authorization.BLL.Contracts.Interfaces;
-using Authentication_Authorization.BLL.Helpers;
-using Authentication_Authorization.BLL.Models;
-using Authentication_Authorization.Presentation.Models.Constants;
-using Microsoft.AspNetCore.Authorization;
+﻿using Authentication_Authorization.BLL.Contracts.Enums;
+using Authentication_Authorization.BLL.Contracts.Interfaces;
+using Authentication_Authorization.BLL.DTOs.UserDTOs;
+using Authentication_Authorization.Presentation.Attributes;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 
@@ -14,26 +13,27 @@ namespace Authentication_Authorization.Presentation.Controllers
     {
         private readonly IUserService _service;
 
+
         public UserController(IUserService userService)
         {
             _service = userService;
         }
 
+
+        [IsAuthorized(Roles.Admin)]
         [HttpGet]
-        [Authorize(Roles = RoleConstatnts.Admin)]
-        public ActionResult<ICollection<UserConfirmationDTO>> GetUsers()
+        public ActionResult<IEnumerable<UserConfirmationDTO>> GetUsers()
         {
-            ICollection<UserResponseDTO> users =  _service.BrowseUsers();
+            IEnumerable<UserResponseDTO> users =  _service.GetAllUsers();
 
             return Ok(users);
         }
 
-        [Authorize(Roles = RoleConstatnts.All)]
+        [IsAuthorized(Roles.All)]
         [HttpGet("{id}")]
         public ActionResult<UserConfirmationDTO> GetUserById(int id)
         {
-            TokenValidationHelper.CheckTokenForServerId(id, HttpContext);
-            UserResponseDTO userById = _service.FindUserById(id);
+            UserResponseDTO userById = _service.GetByIdUser(id, HttpContext);
 
             return Ok(userById);
         }
@@ -41,26 +41,25 @@ namespace Authentication_Authorization.Presentation.Controllers
         [HttpPost]
         public ActionResult<UserConfirmationDTO> PostUser([FromBody] UserRequestBodyDTO newUserBody)
         {
-            UserConfirmationDTO createdUserResponse = _service.CreateUser(newUserBody);
+            UserConfirmationDTO createdUserResponse = _service.AddUser(newUserBody);
 
             return Created(Request.Path, createdUserResponse);
         }
 
-        [Authorize(Roles = RoleConstatnts.All)]
+        [IsAuthorized(Roles.All)]
         [HttpPut("{id}")]
         public  ActionResult<UserConfirmationDTO> PutUser(int id, [FromBody] UserRequestBodyDTO updatedUserBody)
         {
-            TokenValidationHelper.CheckTokenForServerId(id, HttpContext);
-            UserConfirmationDTO updatedUserResponse =  _service.UpdateUser(id, updatedUserBody);
+            UserConfirmationDTO updatedUserResponse =  _service.UpdateUser(id, updatedUserBody, HttpContext);
 
             return Ok(updatedUserResponse);
         }
 
-        [Authorize(Roles = RoleConstatnts.Admin)]
+        [IsAuthorized(Roles.Admin)]
         [HttpDelete("{id}")]
         public  IActionResult DeleteUser(int id)
         {
-            _service.RemoveUser(id);
+            _service.DeleteUser(id);
 
             return NoContent();
         }

@@ -5,7 +5,7 @@ namespace Authentication_Authorization.DAL.Interfaces
 {
     public interface IUserRepository
     {
-        ICollection<User> GetAllUsers();
+        IEnumerable<User> GetAllUsers();
         User GetUserById(int id);
         void AddUser(User newUser);
         void UpdateUser(User updatedUser);

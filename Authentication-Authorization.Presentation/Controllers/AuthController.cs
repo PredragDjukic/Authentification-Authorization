@@ -10,10 +10,12 @@ namespace Authentication_Authorization.Presentation.Controllers
     {
         private readonly IAuthentificationService _service;
 
+
         public AuthController(IAuthentificationService service)
         {
             _service = service;
         }
+
 
         [HttpPost("auth")]
         public ActionResult AutorizeUser([FromBody] PrincipalModel principal)

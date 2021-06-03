@@ -1,4 +1,5 @@
 ﻿using Authentication_Authorization.BLL.Contracts.Interfaces;
+using Authentication_Authorization.BLL.DTOs.UserDTOs;
 using Authentication_Authorization.BLL.Exceptions;
 using Authentication_Authorization.BLL.Helpers;
 using Authentication_Authorization.BLL.Models;
@@ -22,6 +23,7 @@ namespace Authentication_Authorization.BLL.Services
         private readonly IMapper _mapper;
         private readonly IUserRepository _userRepository;
 
+
         public AuthentificationService(
             IOptions<JwtConfigurationsModel> jwtConfig,
             IMapper mapper,
@@ -31,6 +33,7 @@ namespace Authentication_Authorization.BLL.Services
             _mapper = mapper;
             _userRepository = userRepository;
         }
+
 
         public string Refresh(JwtModel jwtModel)
         {
@@ -86,8 +89,7 @@ namespace Authentication_Authorization.BLL.Services
             if (userToValidate.Username == null)
                 throw new BussinesException("Username doesn't exist", 400);
 
-            if (!PasswordHashHelper.VerifyPassword(principal.Username, userToValidate.Password))
-                throw new BussinesException("Password incorrect", 400);
+            PasswordHashHelper.VerifyPassword(principal.Password, userToValidate.Password);
 
             return _mapper.Map<UserForTokenDTO>(userToValidate);
         }
@@ -116,7 +118,7 @@ namespace Authentication_Authorization.BLL.Services
         {
             return new Claim[]
             {
-                new Claim("role", principal.Role),
+                new Claim("titleRole", principal.Role.ToString()),
                 new Claim("username", principal.Username),
                 new Claim("id", principal.Id.ToString()),
                 new Claim("issuedAt", DateTime.UtcNow.ToString())

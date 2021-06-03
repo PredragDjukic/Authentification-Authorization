@@ -11,14 +11,17 @@ namespace Authentication_Authorization.DAL.DatabaseAccess
     public class UserRepository : IUserRepository
     {
         private readonly string connectionString;
+
+
         public UserRepository(string connectionString)
         {
             this.connectionString = connectionString;
         }
 
-        public ICollection<User> GetAllUsers()
+
+        public IEnumerable<User> GetAllUsers()
         {
-            List<User> allUsers = new();
+            List<User> entities = new();
 
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
@@ -30,105 +33,114 @@ namespace Authentication_Authorization.DAL.DatabaseAccess
                     command.CommandType = CommandType.StoredProcedure;
                     command.Connection = connection;
 
+
                     using (SqlDataReader reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            User fetchedUser = new();
-                            fetchedUser.Id = Convert.ToInt32(reader["Id"]);
-                            fetchedUser.FullName = reader["FullName"].ToString();
-                            fetchedUser.Username = reader["Username"].ToString();
-                            fetchedUser.Email = reader["Email"].ToString();
-                            fetchedUser.Password = reader["Password"].ToString();
-                            fetchedUser.Role = reader["Role"].ToString();
-                            allUsers.Add(fetchedUser);
+                            User entity = new();
+                            entity.Id = Convert.ToInt32(reader["Id"]);
+                            entity.FullName = reader["FullName"].ToString();
+                            entity.Username = reader["Username"].ToString();
+                            entity.Email = reader["Email"].ToString();
+                            entity.Password = reader["Password"].ToString();
+                            entity.Role = Convert.ToInt32(reader["Role"]);
+                            entities.Add(entity);
                         }
                     }
                 }
             }
 
-            return allUsers;
+            return entities;
         }
 
         public User GetUserById(int id)
         {
-            User fetchedUserById = new();
+            User entity = null;
 
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
                 connection.Open();
 
-                using (SqlCommand cmd = new SqlCommand())
+                using (SqlCommand command = new SqlCommand())
                 {
-                    cmd.CommandText = UserStoredProcedures.GetById;
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Connection = connection;
-                    cmd.Parameters.AddWithValue("@Id", id);
+                    command.CommandText = UserStoredProcedures.GetById;
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Connection = connection;
+                    command.Parameters.AddWithValue("@Id", id);
 
-                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    using (SqlDataReader reader = command.ExecuteReader())
                     {
                         if (reader.Read())
                         {
-                            fetchedUserById.Id = Convert.ToInt32(reader["Id"]);
-                            fetchedUserById.FullName = reader["FullName"].ToString();
-                            fetchedUserById.Username = reader["Username"].ToString();
-                            fetchedUserById.Email = reader["Email"].ToString();
-                            fetchedUserById.Password = reader["Password"].ToString();
-                            fetchedUserById.Role = reader["Role"].ToString();
+                            entity = new();
+                            entity.Id = Convert.ToInt32(reader["Id"]);
+                            entity.FullName = reader["FullName"].ToString();
+                            entity.Username = reader["Username"].ToString();
+                            entity.Email = reader["Email"].ToString();
+                            entity.SecretId = reader["SecretId"].ToString();
+                            entity.Password = reader["Password"].ToString();
+                            entity.Role = Convert.ToInt32(reader["Role"]);
                         }
                     }
                 }
             }
 
-            return fetchedUserById;
+            return entity;
         }
 
-        public void AddUser(User newUser)
+        public void AddUser(User entity)
         {
+            entity.CreatedAt = DateTime.UtcNow;
+            entity.UpdatedAt = DateTime.UtcNow;
+
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
                 connection.Open();
 
-                using (SqlCommand cmd = new SqlCommand())
+                using (SqlCommand command = new SqlCommand())
                 {
-                    cmd.CommandText = UserStoredProcedures.Add;
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Connection = connection;
+                    command.CommandText = UserStoredProcedures.Add;
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Connection = connection;
 
-                    cmd.Parameters.AddWithValue("@FullName", newUser.FullName);
-                    cmd.Parameters.AddWithValue("@Username", newUser.Username);
-                    cmd.Parameters.AddWithValue("@Email", newUser.Email);
-                    cmd.Parameters.AddWithValue("@Password", newUser.Password);
-                    cmd.Parameters.AddWithValue("@Role", newUser.Role);
-                    cmd.Parameters.AddWithValue("@CreatedAt", newUser.CreatedAt);
-                    cmd.Parameters.AddWithValue("@UpdatedAt", newUser.UpdatedAt);
+                    command.Parameters.AddWithValue("@FullName", entity.FullName);
+                    command.Parameters.AddWithValue("@Username", entity.Username);
+                    command.Parameters.AddWithValue("@Email", entity.Email);
+                    command.Parameters.AddWithValue("@SecretId", entity.SecretId);
+                    command.Parameters.AddWithValue("@Password", entity.Password);
+                    command.Parameters.AddWithValue("@Role", entity.Role);
+                    command.Parameters.AddWithValue("@CreatedAt", entity.CreatedAt);
+                    command.Parameters.AddWithValue("@UpdatedAt", entity.UpdatedAt);
 
-                    cmd.ExecuteNonQuery();
+                    command.ExecuteNonQuery();
                 }
             }
         }
 
-        public void UpdateUser(User updatedUser)
+        public void UpdateUser(User entity)
         {
+            entity.UpdatedAt = DateTime.UtcNow;
+
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
                 connection.Open();
 
-                using (SqlCommand cmd = new SqlCommand())
+                using (SqlCommand command = new SqlCommand())
                 {
-                    cmd.CommandText = UserStoredProcedures.Update;
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Connection = connection;
+                    command.CommandText = UserStoredProcedures.Update;
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Connection = connection;
 
-                    cmd.Parameters.AddWithValue("@Id", updatedUser.Id);
-                    cmd.Parameters.AddWithValue("@FullName", updatedUser.FullName);
-                    cmd.Parameters.AddWithValue("@Username", updatedUser.Username);
-                    cmd.Parameters.AddWithValue("@Email", updatedUser.Email);
-                    cmd.Parameters.AddWithValue("@Password", updatedUser.Password);
-                    cmd.Parameters.AddWithValue("@Role", updatedUser.Role);
-                    cmd.Parameters.AddWithValue("@UpdatedAt", updatedUser.UpdatedAt);
+                    command.Parameters.AddWithValue("@Id", entity.Id);
+                    command.Parameters.AddWithValue("@FullName", entity.FullName);
+                    command.Parameters.AddWithValue("@Username", entity.Username);
+                    command.Parameters.AddWithValue("@Email", entity.Email);
+                    command.Parameters.AddWithValue("@Password", entity.Password);
+                    command.Parameters.AddWithValue("@Role", entity.Role);
+                    command.Parameters.AddWithValue("@UpdatedAt", entity.UpdatedAt);
 
-                    cmd.ExecuteNonQuery();
+                    command.ExecuteNonQuery();
                 }
             }
         }
@@ -148,14 +160,13 @@ namespace Authentication_Authorization.DAL.DatabaseAccess
                     cmd.Parameters.AddWithValue("@Id", deletedUserId);
 
                     cmd.ExecuteNonQuery();
-
                 }
             }
         }
 
         public User GetUserByUsername(string username)
         {
-            User fetchedUserByUsername = new();
+            User entity = null;
 
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
@@ -173,16 +184,17 @@ namespace Authentication_Authorization.DAL.DatabaseAccess
                     {
                         if (reader.Read())
                         {
-                            fetchedUserByUsername.Username = reader["Username"].ToString();
-                            fetchedUserByUsername.Password = reader["Password"].ToString();
-                            fetchedUserByUsername.Role = reader["Role"].ToString();
-                            fetchedUserByUsername.Id = Convert.ToInt32(reader["Id"]);
+                            entity = new();
+                            entity.Username = reader["Username"].ToString();
+                            entity.Password = reader["Password"].ToString();
+                            entity.Role = Convert.ToInt32(reader["Role"]);
+                            entity.Id = Convert.ToInt32(reader["Id"]);
                         }
                     }
                 }
             }
 
-            return fetchedUserByUsername;
+            return entity;
         }
 
     }

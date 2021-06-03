@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Authentication_Authorization.BLL.Exceptions;
+using System;
 using System.Security.Cryptography;
 
 namespace Authentication_Authorization.BLL.Helpers
@@ -30,7 +31,7 @@ namespace Authentication_Authorization.BLL.Helpers
             return base64Hash;
         }
 
-        public static bool VerifyPassword(string password, string hashedPassword)
+        public static void VerifyPassword(string password, string hashedPassword)
         {
             byte[] hashBytes = Convert.FromBase64String(hashedPassword);
             byte[] salt = new byte[saltSize];
@@ -42,12 +43,9 @@ namespace Authentication_Authorization.BLL.Helpers
             {
                 if (hashBytes[i + saltSize] != hash[i])
                 {
-                    return false;
+                    throw new BussinesException("Password incorrect", 400);
                 }
             }
-
-            return true;
         }
-
     }
 }

@@ -1,4 +1,4 @@
-﻿using Authentication_Authorization.BLL.Models;
+﻿using Authentication_Authorization.BLL.DTOs.UserDTOs;
 using Authentication_Authorization.DAL.Entities;
 using AutoMapper;
 

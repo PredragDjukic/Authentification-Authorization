@@ -1,4 +1,4 @@
-﻿namespace Authentication_Authorization.BLL.Models
+﻿namespace Authentication_Authorization.BLL.DTOs.UserDTOs
 {
     public class UserResponseDTO
     {
@@ -6,6 +6,7 @@
         public string FullName { get; set; }
         public string Username { get; set; }
         public string Email { get; set; }
-        public string Role { get; set; }
+        public string SecretId { get; set; }
+        public int Role { get; set; }
     }
 }

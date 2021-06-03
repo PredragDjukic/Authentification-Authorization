@@ -3,6 +3,7 @@ using Authentication_Authorization.BLL.Models;
 using Authentication_Authorization.BLL.Services;
 using Authentication_Authorization.DAL.DatabaseAccess;
 using Authentication_Authorization.DAL.Interfaces;
+using Authentication_Authorization.DAL.Repositories;
 using Authentication_Authorization.Presentation.Attributes;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -62,14 +63,19 @@ namespace Authentication_Authorization.Presentation
                 };
             });
 
+            services.AddHttpContextAccessor();
 
-            services.Configure<DatabaseConnectionStringModel>(Configuration.GetSection("Database"));
+            services.Configure<EncryptionSecretModel>(Configuration.GetSection("EncryptionSecret"));
             services.Configure<JwtConfigurationsModel>(Configuration.GetSection("Jwt"));
             services.AddOptions();
 
             services.AddSingleton<IUserService, UserService>();
             services.AddSingleton<IAuthentificationService, AuthentificationService>();
+            services.AddSingleton<IPlatformCredentialsService, PlatformCredentialsService>();
+
             services.AddSingleton<IUserRepository>(x => new UserRepository(Configuration.GetConnectionString("DatabaseString")));
+            services.AddSingleton<IPlatformCredentialsRepository>(x => new PlatformCredentialsRepository(Configuration.GetConnectionString("DatabaseString")));
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -1,13 +1,15 @@
 ﻿using Authentication_Authorization.BLL.Contracts.Enums;
 using Authentication_Authorization.BLL.Contracts.Interfaces;
+using Authentication_Authorization.BLL.DTOs.UserDTOs;
 using Authentication_Authorization.BLL.Exceptions;
 using Authentication_Authorization.BLL.Helpers;
-using Authentication_Authorization.BLL.Models;
 using Authentication_Authorization.DAL.Entities;
 using Authentication_Authorization.DAL.Interfaces;
 using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Authentication_Authorization.BLL.Services
 {
@@ -17,27 +19,68 @@ namespace Authentication_Authorization.BLL.Services
         private readonly IMapper _mapper;
 
 
-        public UserService(IMapper mapper, IUserRepository repository)
+        public UserService(IUserRepository repository, IMapper mapper)
         {
-            _mapper = mapper;
             _repository = repository;
+            _mapper = mapper;
         }
 
-        public ICollection<UserResponseDTO> BrowseUsers()
-        {
-            ICollection<User> allUsers = _repository.GetAllUsers();
 
-            return (_mapper.Map<ICollection<UserResponseDTO>>(allUsers));
+        public IEnumerable<UserResponseDTO> GetAllUsers()
+        {
+            IEnumerable<User> allUsers = _repository.GetAllUsers();
+
+            return (_mapper.Map<IEnumerable<UserResponseDTO>>(allUsers));
         }
 
-        public UserResponseDTO FindUserById(int id)
+        public UserResponseDTO GetByIdUser(int id, HttpContext context)
         {
+            this.CheckIfJwtUserIdIsValid(id, context);
             User userById = _repository.GetUserById(id);
             
-            if (userById.Id == 0)
+            if (userById == null)
                 throw new BussinesException("User doesn't exist", 400);
 
             return (_mapper.Map<UserResponseDTO>(userById));
+        }
+
+        public UserConfirmationDTO UpdateUser(int id, UserRequestBodyDTO updatedUser, HttpContext context)
+        {
+            this.CheckIfJwtUserIdIsValid(id, context);
+            this.CheckIfRoleIsValid(updatedUser.Role);
+            User userToUpdate = _repository.GetUserById(id);
+
+            if (userToUpdate == null)
+                throw new BussinesException("User with given Id doesn't exist", 400);
+
+            this.UpdateUserObject(userToUpdate, updatedUser);
+            _repository.UpdateUser(userToUpdate);
+
+            return (_mapper.Map<UserConfirmationDTO>(userToUpdate));
+        }
+
+        private void CheckIfJwtUserIdIsValid(int id, HttpContext context)
+        {
+            var role = context.User.Claims.FirstOrDefault(e => e.Type == "titleRole").Value;
+
+            if (Convert.ToInt32(role) == Convert.ToInt32(Roles.Admin))
+            {
+                return;
+            }
+
+            var userIdFromJwt = context.User.Claims.FirstOrDefault(e => e.Type == "id").Value;
+
+            if (id != Convert.ToInt32(userIdFromJwt))
+                throw new BussinesException("Forbidden", 403);
+        }
+
+        private void UpdateUserObject(User userToUpdate, UserRequestBodyDTO updatedUser)
+        {
+            userToUpdate.FullName = updatedUser.FullName;
+            userToUpdate.Username = updatedUser.Username;
+            userToUpdate.Email = updatedUser.Email;
+            userToUpdate.Password = PasswordHashHelper.Hash(updatedUser.Password);
+            userToUpdate.Role = updatedUser.Role;
         }
 
         public UserForTokenDTO FindUserByUsername(string username)
@@ -47,67 +90,50 @@ namespace Authentication_Authorization.BLL.Services
             return (_mapper.Map<UserForTokenDTO>(userByUsername));
         }
 
-        public UserConfirmationDTO CreateUser(UserRequestBodyDTO newUserBody)
+        public UserConfirmationDTO AddUser(UserRequestBodyDTO newUserBody)
         {
-            bool isRoleValid = Enum.IsDefined(typeof(Roles), newUserBody.Role);
+            this.CheckIfRoleIsValid(newUserBody.Role);
 
-            if (!isRoleValid)
-                throw new BussinesException("Given Role doesn't exist", 400);
-
-            User newUser = this.CreateUserAndAddToDatabase(newUserBody);
+            User newUser = this.CreateUserObject(newUserBody);
+            _repository.AddUser(newUser);
 
             return (_mapper.Map<UserConfirmationDTO>(newUser));
         }
 
-        private User CreateUserAndAddToDatabase(UserRequestBodyDTO newUserBody)
+        private void CheckIfRoleIsValid(int role)
         {
-            User newUser = new()
+            bool isRoleValid = Enum.IsDefined(typeof(Roles), role);
+
+            if (!isRoleValid)
+                throw new BussinesException("Given Role doesn't exist", 400);
+        }
+
+        private User CreateUserObject(UserRequestBodyDTO newUserBody)
+        {
+            return new User()
             {
                 FullName = newUserBody.FullName,
                 Username = newUserBody.Username,
                 Email = newUserBody.Email,
+                SecretId = this.GenerateSecretId(),
                 Password = PasswordHashHelper.Hash(newUserBody.Password),
-                Role = newUserBody.Role,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                Role = newUserBody.Role
             };
-            _repository.AddUser(newUser);
-
-            return newUser;
         }
 
-        public UserConfirmationDTO UpdateUser(int id, UserRequestBodyDTO updatedUser)
+        private string GenerateSecretId()
         {
-            User userToUpdate = _repository.GetUserById(id);
-            bool isRoleValid = Enum.IsDefined(typeof(Roles), updatedUser.Role);
-
-            if(userToUpdate.Id == 0)
-                throw new BussinesException("User with given Id doesn't exist", 400);
-
-            else if(!isRoleValid)
-                throw new BussinesException("Given Role doesn't exist", 400);
-
-            this.UpdateUserAndAddToDatabase(userToUpdate, updatedUser);     
-            
-            return (_mapper.Map<UserConfirmationDTO>(userToUpdate));
+            Random random = new Random();
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            return new string(Enumerable.Repeat(chars, 64)
+              .Select(s => s[random.Next(s.Length)]).ToArray());
         }
 
-        private void UpdateUserAndAddToDatabase(User userToUpdate, UserRequestBodyDTO updatedUser)
-        {
-            userToUpdate.FullName = updatedUser.FullName;
-            userToUpdate.Username = updatedUser.Username;
-            userToUpdate.Email = updatedUser.Email;
-            userToUpdate.Password = PasswordHashHelper.Hash(updatedUser.Password);
-            userToUpdate.Role = updatedUser.Role;
-            userToUpdate.UpdatedAt = DateTime.UtcNow;
-            _repository.UpdateUser(userToUpdate);
-        }
-
-        public void RemoveUser(int id)
+        public void DeleteUser(int id)
         {
             User userToDelete = _repository.GetUserById(id);
 
-            if (userToDelete.Id == 0)
+            if (userToDelete == null)
                 throw new BussinesException("User with that Id doesn't exist", 400);
 
             _repository.DeleteUser(id);

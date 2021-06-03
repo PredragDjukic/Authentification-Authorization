@@ -10,6 +10,7 @@ namespace Authentication_Authorization.BLL.Mapper
             var config = new MapperConfiguration(cfg => {
                 cfg.ShouldMapProperty = p => p.GetMethod.IsPublic || p.GetMethod.IsAssembly;
                 cfg.AddProfile<UserProfile>();
+                cfg.AddProfile<PlatformCredentialsProfile>();
             });
             var mapper = config.CreateMapper();
             return mapper;
