@@ -40,10 +40,13 @@ namespace Authentication_Authorization.DAL.Repositories
                         while (reader.Read())
                         {
                             PlatformCredentials entity = new();
+
                             entity.Id = Convert.ToInt32(reader["Id"]);
                             entity.Username = reader["Username"].ToString();
                             entity.Name = reader["Name"].ToString();
                             entity.UserId = Convert.ToInt32(reader["UserId"]);
+                            entity.ImageName = reader["ImageName"].ToString();
+
                             entities.Add(entity);
                         }
                     }
@@ -66,6 +69,7 @@ namespace Authentication_Authorization.DAL.Repositories
                     command.CommandText = PlatformCredentialsStoredProcedures.GetById;
                     command.CommandType = CommandType.StoredProcedure;
                     command.Connection = connection;
+
                     command.Parameters.AddWithValue("@Id", credentialsId);
                     command.Parameters.AddWithValue("@UserId", userId);
 
@@ -74,10 +78,12 @@ namespace Authentication_Authorization.DAL.Repositories
                         if (reader.Read())
                         {
                             entity = new();
+
                             entity.Id = Convert.ToInt32(reader["Id"]);
                             entity.Username = reader["Username"].ToString();
                             entity.Name = reader["Name"].ToString();
                             entity.UserId = Convert.ToInt32(reader["UserId"]);
+                            entity.ImageName = reader["ImageName"].ToString();
                         }
                     }
                 }
@@ -187,6 +193,57 @@ namespace Authentication_Authorization.DAL.Repositories
             }
 
             return entity;
+        }
+
+        public void AddImage(int id, int userId, string imageName)
+        {
+            using (SqlConnection connection = new SqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                using (SqlCommand command = new SqlCommand())
+                {
+                    command.CommandText = PlatformCredentialsStoredProcedures.InsertImage;
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Connection = connection;
+
+                    command.Parameters.AddWithValue("@Id", id);
+                    command.Parameters.AddWithValue("@ImageName", imageName);
+                    command.Parameters.AddWithValue("@UserId", userId);
+
+                    command.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public string CheckIfPlatformCredentialsContainImage(int id, int userId)
+        {
+            string image = null;
+
+            using (SqlConnection connection = new SqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                using (SqlCommand command = new SqlCommand())
+                {
+                    command.CommandText = PlatformCredentialsStoredProcedures.CheckIfImageExist;
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Connection = connection;
+
+                    command.Parameters.AddWithValue("@Id", id);
+                    command.Parameters.AddWithValue("@UserId", userId);
+
+                    using (SqlDataReader reader = command.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            image = reader["ImageName"].ToString();
+                        }
+                    }
+                }
+            }
+
+            return image;
         }
     }
 }

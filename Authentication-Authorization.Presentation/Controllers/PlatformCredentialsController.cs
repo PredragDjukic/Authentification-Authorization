@@ -1,7 +1,6 @@
 ﻿using Authentication_Authorization.BLL.Contracts.Enums;
 using Authentication_Authorization.BLL.Contracts.Interfaces;
 using Authentication_Authorization.BLL.DTOs.PlatformCredentialsDTOs;
-using Authentication_Authorization.BLL.Helpers;
 using Authentication_Authorization.BLL.Models;
 using Authentication_Authorization.Presentation.Attributes;
 using Microsoft.AspNetCore.Http;
@@ -20,6 +19,7 @@ namespace Authentication_Authorization.Presentation.Controllers
         private readonly IPlatformCredentialsService _credentialsService;
 
         private readonly int userId;
+
 
         public PlatformCredentialsController(
             IPlatformCredentialsService credentialsService,
@@ -84,6 +84,7 @@ namespace Authentication_Authorization.Presentation.Controllers
         public ActionResult CheckPassword(int id, [FromBody] PasswordModel passwordModel)
         {
             string credentialPassword = _credentialsService.GetPlatformPassword(id, userId, passwordModel.Password);
+
             return Ok(new { password = credentialPassword });
         }
 
@@ -93,6 +94,22 @@ namespace Authentication_Authorization.Presentation.Controllers
             byte[] file = _credentialsService.GeneratePlatformCredentialsPdf(userId, requestModel);
 
             return File(file, "application/pdf");
+        }
+
+        [HttpPost("{id}/image")]
+        public ActionResult UploadImage(int id, IFormFile image)
+        {
+            _credentialsService.AddImage(id, userId, image);
+
+            return Ok();
+        }
+
+        [HttpPut("{id}/image")]
+        public ActionResult UpdateImage(int id, IFormFile image)
+        {
+            _credentialsService.UpdateImage(id, userId, image);
+
+            return Ok();
         }
     }
 }

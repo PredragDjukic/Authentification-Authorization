@@ -10,10 +10,13 @@ namespace Authentication_Authorization.Presentation.Attributes
     public class IsAuthorizedAttribute : Attribute, IAuthorizationFilter
     {
         private readonly Roles role;
+
+
         public IsAuthorizedAttribute(Roles role)
         {
             this.role = role;
         }
+
 
         public void OnAuthorization(AuthorizationFilterContext context)
         {

@@ -9,6 +9,7 @@ namespace Authentication_Authorization.DAL.Entities
         public string Name { get; set; }
         public string Password { get; set; }
         public int UserId { get; set; }
+        public string ImageName { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
     }

@@ -36,10 +36,7 @@ namespace Authentication_Authorization.BLL.Services
         public UserResponseDTO GetByIdUser(int id, HttpContext context)
         {
             this.CheckIfJwtUserIdIsValid(id, context);
-            User userById = _repository.GetUserById(id);
-            
-            if (userById == null)
-                throw new BussinesException("User doesn't exist", 400);
+            User userById = this.GetUser(id);
 
             return (_mapper.Map<UserResponseDTO>(userById));
         }
@@ -48,11 +45,8 @@ namespace Authentication_Authorization.BLL.Services
         {
             this.CheckIfJwtUserIdIsValid(id, context);
             this.CheckIfRoleIsValid(updatedUser.Role);
-            User userToUpdate = _repository.GetUserById(id);
 
-            if (userToUpdate == null)
-                throw new BussinesException("User with given Id doesn't exist", 400);
-
+            User userToUpdate = GetUser(id);
             this.UpdateUserObject(userToUpdate, updatedUser);
             _repository.UpdateUser(userToUpdate);
 
@@ -79,15 +73,8 @@ namespace Authentication_Authorization.BLL.Services
             userToUpdate.FullName = updatedUser.FullName;
             userToUpdate.Username = updatedUser.Username;
             userToUpdate.Email = updatedUser.Email;
-            userToUpdate.Password = PasswordHashHelper.Hash(updatedUser.Password);
+            userToUpdate.Password = HashHelper.Hash(updatedUser.Password);
             userToUpdate.Role = updatedUser.Role;
-        }
-
-        public UserForTokenDTO FindUserByUsername(string username)
-        {
-            User userByUsername = _repository.GetUserByUsername(username);
-
-            return (_mapper.Map<UserForTokenDTO>(userByUsername));
         }
 
         public UserConfirmationDTO AddUser(UserRequestBodyDTO newUserBody)
@@ -116,7 +103,7 @@ namespace Authentication_Authorization.BLL.Services
                 Username = newUserBody.Username,
                 Email = newUserBody.Email,
                 SecretId = this.GenerateSecretId(),
-                Password = PasswordHashHelper.Hash(newUserBody.Password),
+                Password = HashHelper.Hash(newUserBody.Password),
                 Role = newUserBody.Role
             };
         }
@@ -137,6 +124,16 @@ namespace Authentication_Authorization.BLL.Services
                 throw new BussinesException("User with that Id doesn't exist", 400);
 
             _repository.DeleteUser(id);
+        }
+
+        private User GetUser(int id)
+        {
+            User user = _repository.GetUserById(id);
+
+            if (user == null)
+                throw new BussinesException("User doesn't exist", 400);
+
+            return user;
         }
     }
 }

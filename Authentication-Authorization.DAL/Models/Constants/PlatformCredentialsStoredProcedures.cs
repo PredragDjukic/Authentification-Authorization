@@ -8,5 +8,7 @@
         public const string Update = "UpdatePlatformCredentials";
         public const string Delete = "DeletePlatformCredentials";
         public const string GetHashedPassword = "GetPlatformCredentialsPassword";
+        public const string InsertImage = "InsertImageToPlatformCredentials";
+        public const string CheckIfImageExist = "CheckIfImageExist";
     }
 }

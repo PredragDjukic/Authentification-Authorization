@@ -6,7 +6,6 @@ using Authentication_Authorization.BLL.Models;
 using Authentication_Authorization.DAL.Entities;
 using Authentication_Authorization.DAL.Interfaces;
 using AutoMapper;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System;
@@ -37,9 +36,7 @@ namespace Authentication_Authorization.BLL.Services
 
         public string Refresh(JwtModel jwtModel)
         {
-            var handler = new JwtSecurityTokenHandler();
-            var jsonToken = handler.ReadToken(jwtModel.Token);
-            var encryptedToken = jsonToken as JwtSecurityToken;
+            var encryptedToken = this.ReadToken(jwtModel.Token);
 
             Claim issuedAt = encryptedToken.Claims.FirstOrDefault(e => e.Type == "issuedAt");
             Claim username = encryptedToken.Claims.FirstOrDefault(e => e.Type == "username");
@@ -50,6 +47,15 @@ namespace Authentication_Authorization.BLL.Services
             this.CheckIfRefreshTokenIsValid(issuedAt.Value);
 
             return this.GenerateJwtWithUsername(username.Value);
+        }
+
+        private JwtSecurityToken ReadToken(string token)
+        {
+            var handler = new JwtSecurityTokenHandler();
+            var jsonToken = handler.ReadToken(token);
+            var encryptedToken = jsonToken as JwtSecurityToken;
+
+            return encryptedToken;
         }
 
         private string GenerateJwtWithUsername(string username)
@@ -74,7 +80,7 @@ namespace Authentication_Authorization.BLL.Services
                 throw new BussinesException("RefreshToken has expired", 400);
         }
 
-        public string ValidatePrincipalAndGenerateToken(PrincipalModel principal, HttpResponse response)
+        public string ValidatePrincipalAndGenerateToken(PrincipalModel principal)
         {
             UserForTokenDTO principalForToken = this.Validate(principal);
             string jwtToken = GenerateJwt(principalForToken);
@@ -84,14 +90,20 @@ namespace Authentication_Authorization.BLL.Services
 
         private UserForTokenDTO Validate(PrincipalModel principal)
         {
-            User userToValidate = _userRepository.GetUserByUsername(principal.Username);
+            User user = GetUserByUserName(principal.Username);
+            HashHelper.VerifyValue(principal.Password, user.Password);
+
+            return _mapper.Map<UserForTokenDTO>(user);
+        }
+
+        private User GetUserByUserName(string username) 
+        {
+            User userToValidate = _userRepository.GetUserByUsername(username);
 
             if (userToValidate.Username == null)
                 throw new BussinesException("Username doesn't exist", 400);
 
-            PasswordHashHelper.VerifyPassword(principal.Password, userToValidate.Password);
-
-            return _mapper.Map<UserForTokenDTO>(userToValidate);
+            return userToValidate;
         }
 
         public string GenerateJwt(UserForTokenDTO principal)

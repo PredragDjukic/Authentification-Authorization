@@ -11,5 +11,7 @@ namespace Authentication_Authorization.DAL.Interfaces
         void UpdatePlatformCredentials(PlatformCredentials updatedCredentials);
         void DeletePlatformCredentials(int userId, int deletedCredentialsId);
         string GetPlatformCredentialsHashedPassword(int userId, int id);
+        void AddImage(int id, int userId, string imageName);
+        string CheckIfPlatformCredentialsContainImage(int id, int userId);
     }
 }

@@ -16,4 +16,8 @@
     <ProjectReference Include="..\Authentication-Authorization.DAL\Authentication-Authorization.DAL.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\" />
+  </ItemGroup>
+
 </Project>

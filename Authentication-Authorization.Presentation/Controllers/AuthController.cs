@@ -20,7 +20,7 @@ namespace Authentication_Authorization.Presentation.Controllers
         [HttpPost("auth")]
         public ActionResult AutorizeUser([FromBody] PrincipalModel principal)
         {
-            var token = _service.ValidatePrincipalAndGenerateToken(principal, Response);
+            string token = _service.ValidatePrincipalAndGenerateToken(principal);
 
             return Ok(new { token });
         }
@@ -30,8 +30,8 @@ namespace Authentication_Authorization.Presentation.Controllers
         public ActionResult RefreshToken([FromBody] JwtModel token)
         {
             string newJwt = _service.Refresh(token);
-            return Ok(new { token = newJwt });
 
+            return Ok(new { token = newJwt });
         }
 
     }
